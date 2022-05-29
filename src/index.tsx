@@ -1,4 +1,4 @@
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
 const LINKING_ERROR =
   `The package 'react-native-smart-bottle' doesn't seem to be linked. Make sure: \n\n` +
@@ -6,7 +6,7 @@ const LINKING_ERROR =
   '- You rebuilt the app after installing the package\n' +
   '- You are not using Expo managed workflow\n';
 
-const SmartBottle = NativeModules.SmartBottle
+export const SmartBottle = NativeModules.SmartBottle
   ? NativeModules.SmartBottle
   : new Proxy(
       {},
@@ -17,6 +17,7 @@ const SmartBottle = NativeModules.SmartBottle
       }
     );
 
-export function multiply(a: number, b: number): Promise<number> {
-  return SmartBottle.multiply(a, b);
-}
+export const eventEmitter = new NativeEventEmitter(SmartBottle);
+
+
+

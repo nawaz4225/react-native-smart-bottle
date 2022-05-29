@@ -21,7 +21,7 @@ def safeExtGet(prop, fallback) {
 android {
     compileSdkVersion safeExtGet('SmartBottle_compileSdkVersion', 29)
     defaultConfig {
-        minSdkVersion safeExtGet('SmartBottle_minSdkVersion', 16)
+        minSdkVersion safeExtGet('SmartBottle_minSdkVersion', 21)
         targetSdkVersion safeExtGet('SmartBottle_targetSdkVersion', 29)
         versionCode 1
         versionName "1.0"
@@ -56,4 +56,11 @@ repositories {
 dependencies {
     //noinspection GradleDynamicVersion
     implementation "com.facebook.react:react-native:+"  // From node_modules
+  //noinspection GradleCompatible
+  implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.0.0'
+
+  implementation 'io.reactivex.rxjava2:rxjava:2.2.6'
+  implementation 'io.reactivex.rxjava2:rxandroid:2.1.0'
+  implementation 'com.tbruyelle.rxpermissions2:rxpermissions:0.9.5@aar'
+
 }
