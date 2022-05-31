@@ -192,11 +192,11 @@ public class SmartBottleModule extends ReactContextBaseJavaModule {
           int power = new BigInteger(powerStr,16).intValue();
           sb.append(power + "%");
           if (status.equals("00")){
-            sb.append("未充电");
+            sb.append("not charged");
           }else if (status.equals("01")){
-            sb.append("正在充电");
+            sb.append("Charging");
           }else{
-            sb.append("充满");
+            sb.append("full");
           }
           Log.e(TAG, "电量信息成功");
 //          tvResult.setText("电量信息成功:" + sb);
@@ -221,7 +221,7 @@ public class SmartBottleModule extends ReactContextBaseJavaModule {
           int drinkWater = new BigInteger(hexDrink,16).intValue();
           Log.e(TAG, "获取喝水目标成功");
 //          tvResult.setText("获取喝水目标成功:" + drinkWater);
-          map.putString("value", "Acquire water goal success");
+          map.putString("value", "Acquire water goal success: " + drinkWater);
           sendEvent("Event", map);
         }else if (deviceValue.length() == 18 && deviceValue.startsWith("23060405")){
           List timeList = strToList(deviceValue);
@@ -231,7 +231,7 @@ public class SmartBottleModule extends ReactContextBaseJavaModule {
           int drinkEndWater = new BigInteger(hexEndDrink,16).intValue();
           Log.e(TAG, "获取当天饮水量成功");
 //          tvResult.setText("当天饮水量:" + drinkCountWater + "  当天最后一次饮水量：" + drinkEndWater);
-          map.putString("value", "water intake for the day:" + drinkCountWater + "  当天最后一次饮水量：" + drinkEndWater);
+          map.putString("value", "water intake for the day:" + drinkCountWater + "  Last water intake of the day：" + drinkEndWater);
           sendEvent("Event", map);
         }else if (deviceValue.length() >= 14 && deviceValue.startsWith("230B04F1030001")){
           Log.e(TAG, "获取喝水目标成功");
@@ -320,7 +320,7 @@ public class SmartBottleModule extends ReactContextBaseJavaModule {
             map.putString("value", "Failed to set personal information");
             sendEvent("Event", map);
           }
-        }else if (deviceValue.startsWith("2308040A")){//2308040A011E4A6F696ED7
+        }else if (deviceValue.startsWith("230B040A")){//2308040A011E4A6F696ED7
           //08这个需要根据名字的长度+4 算出来的  是动态的，需要切记
           Log.e(TAG, "获取个人信息成功");
           List recordList = strToList(deviceValue);
@@ -331,7 +331,7 @@ public class SmartBottleModule extends ReactContextBaseJavaModule {
             String singleStr = (String) recordList.get(i);
             sb.append(singleStr);
           }
-          String sex = sexByte.equals("01") ? "男" : "女";
+          String sex = sexByte.equals("01") ? "Male" : "Female";
           int age = new BigInteger(ageByte,16).intValue();
           String name = hexStringToString(sb.toString());
 //          tvResult.setText(String.format("姓名：%s  性别：%s  年龄：%s",name,sex,age));
@@ -473,15 +473,86 @@ public class SmartBottleModule extends ReactContextBaseJavaModule {
     }
   };
 
+    @ReactMethod
+    public void handShake() {
+      if (service != null) {
+        service.handShake();
+      }
+    }
 
   @ReactMethod
-  public void sendTyle(int model) {
+  public void setTime(String year, int month, int day, int hour, int minute, int dayOfWeek) {
     if (service != null) {
-      service.write(model,8755);
+      service.setTime(year, month, day, hour, minute, dayOfWeek);
     }
   }
 
-  private void sendEvent(String eventName,
+  @ReactMethod
+  public void getTime() {
+    if (service != null) {
+      service.getTime();
+    }
+  }
+
+  @ReactMethod
+  public void getBattery() {
+    if (service != null) {
+      service.getBattery();
+    }
+  }
+
+  @ReactMethod
+  public void setIntakeGoal(int drinkWater) {
+    if (service != null) {
+      service.setIntakeGoal(drinkWater);
+    }
+  }
+
+  @ReactMethod
+  public void getIntakeGoal() {
+    if (service != null) {
+      service.getIntakeGoal();
+    }
+  }
+
+  @ReactMethod
+  public void getCurrentIntake() {
+    if (service != null) {
+      service.getCurrentIntake();
+    }
+  }
+
+  @ReactMethod
+  public void getWaterDirectory(String year, int month, int day) {
+    if (service != null) {
+      service.getWaterDirectory(year, month, day);
+    }
+  }
+
+  @ReactMethod
+  public void deleteWaterDirectory(String year, int month, int day) {
+    if (service != null) {
+      service.deleteWaterDirectory(year, month, day);
+    }
+  }
+
+  @ReactMethod
+  public void setUserInformation(String name, String sex, int age) {
+    if (service != null) {
+      service.setUserInformation(name, sex, age);
+    }
+  }
+
+  @ReactMethod
+  public void getUserInformation() {
+    if (service != null) {
+      service.getUserInformation();
+    }
+  }
+
+
+
+    private void sendEvent(String eventName,
                          @Nullable WritableMap params) {
     getReactApplicationContext()
       .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)

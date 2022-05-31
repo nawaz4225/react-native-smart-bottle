@@ -37,8 +37,58 @@ export default function App() {
       />  
 
       <Button
-        title="Send Command"
-        onPress={() => SmartBottle.sendTyle(1)}
+        title="Handshake Command"
+        onPress={() => SmartBottle.handShake()}
+      />  
+
+      <Button
+        title="Set Time Command"
+        onPress={() => SmartBottle.setTime("2022", 2, 2, 12, 45, 1)}
+      />  
+
+      <Button
+        title="Get Time Command"
+        onPress={() => SmartBottle.getTime()}
+      />  
+
+      <Button
+        title="Get Battery Command"
+        onPress={() => SmartBottle.getBattery()}
+      /> 
+
+      <Button
+        title="Set Water Intake Goal Command"
+        onPress={() => SmartBottle.setIntakeGoal(2021)}
+      /> 
+
+      <Button
+        title="Get Water Intake Goal Command"
+        onPress={() => SmartBottle.getIntakeGoal()}
+      />  
+
+      <Button
+        title="Get current Water Intake Command"
+        onPress={() => SmartBottle.getCurrentIntake()}
+      />  
+
+      <Button
+        title="Get water directory Command"
+        onPress={() => SmartBottle.getWaterDirectory("2022", 5, 31)}
+      />  
+
+      <Button
+        title="Delete Day Data Command"
+        onPress={() => SmartBottle.deleteWaterDirectory("2022", 5, 31)}
+      />  
+
+      <Button
+        title="Set User Information Command"
+        onPress={() => SmartBottle.setUserInformation("Shahbaz", "Male", 30)}
+      />  
+
+      <Button
+        title="Get User Information Command"
+        onPress={() => SmartBottle.getUserInformation()}
       />  
     </View>
   );

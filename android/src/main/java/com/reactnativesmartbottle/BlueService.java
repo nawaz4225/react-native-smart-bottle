@@ -28,6 +28,8 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.UUID;
 
+import javax.sql.StatementEvent;
+
 /**
  * Created by fff on 2017-3-15.
  */
@@ -275,195 +277,196 @@ public class BlueService extends Service {
         Log.e("TAG", "通知广播注册成功");
     }
 
-    @SuppressLint("NewApi")
-    public void write(int model,int drinkWater) {
-        if (gatt == null) {
-            Toast.makeText(this, "发送失败", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        BluetoothGattService gattService = gatt.getService(RX_SERVICE_UUID);
-        if (gattService == null) {
-            Toast.makeText(this, "发送失败", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        BluetoothGattCharacteristic characteristic = gattService.getCharacteristic(TX_CHAR_UUID);
-        byte[] data = null;
-        switch (model) {
-            case 1://握手指令
-                data = new byte[7];
-                data[0] = 0x23;
-                data[1] = 0x04;
-                data[2] = 0x08;
-                data[3] = 0x01;
-                data[4] = 0x55;
-                data[5] = (byte) 0xAA;
-                byte endByteWo = byteCheck(data,6);
-                String hexToWo = String.format("%04x", endByteWo);
-                data[6] = hexString2Byte(hexToWo.substring(2,4));
-                break;
-            case 2://设置设备时间
-                Calendar now = Calendar.getInstance();
-                String year =  "" + now.get(Calendar.YEAR);
-                int month = now.get(Calendar.MONTH) + 1;
-                int day = now.get(Calendar.DAY_OF_MONTH);
-                int hour = now.get(Calendar.HOUR_OF_DAY);
-                int minute = now.get(Calendar.MINUTE);
-                String week = "0" + (now.get(Calendar.DAY_OF_WEEK) - 1);
+    private void send(byte[] data) {
+      if (gatt == null) {
+        Toast.makeText(this, "发送失败", Toast.LENGTH_SHORT).show();
+        return;
+      }
+      BluetoothGattService gattService = gatt.getService(RX_SERVICE_UUID);
+      if (gattService == null) {
+        Toast.makeText(this, "发送失败", Toast.LENGTH_SHORT).show();
+        return;
+      }
 
-                String yearStr = year.substring(2,year.length());
-                String monthStr = month > 10 ? "" + month : "0" + month;
-                String dayStr = day > 10 ? "" + day : "0" + day;
-                String hourStr = hour > 10 ? "" + hour : "0" + hour;
-                String minuteStr = minute > 10 ? "" + minute : "0" + minute;
-                data = new byte[12];
-                data[0] = (byte) 0x23;
-                data[1] = (byte) 0x09;
-                data[2] = (byte) 0x01;
-                data[3] = (byte) 0x02;
-                data[4] = hexString2Byte(yearStr);
-                data[5] = hexString2Byte(monthStr);
-                data[6] = hexString2Byte(dayStr);
-                data[7] = hexString2Byte(hourStr);
-                data[8] = hexString2Byte(minuteStr);
-                data[9] = 0x00;
-                data[10] = hexString2Byte(week);
-                byte endByte = byteCheck(data,11);
-                String hexTo = String.format("%04x", endByte);
-                data[11] = hexString2Byte(hexTo.substring(2,4));
-                break;
-            case 3://获取设备时间
-                data = new byte[5];
-                data[0] = (byte) 0x23;
-                data[1] = (byte) 0x02;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x02;
-                data[4] = (byte) 0x27;
-                break;
-            case 4://电量信息
-                data = new byte[5];
-                data[0] = (byte) 0x23;
-                data[1] = (byte) 0x02;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x03;
-                data[4] = (byte) 0x26;
-                break;
-            case 5://设置喝水目标
-                String hexDrink = String.format("%04X",drinkWater);
-                data = new byte[7];
-                data[0] = (byte) 0x23;
-                data[1] = (byte) 0x04;
-                data[2] = (byte) 0x01;
-                data[3] = (byte) 0x04;
-                data[4] = hexString2Byte(hexDrink.substring(0,2));
-                data[5] = hexString2Byte(hexDrink.substring(2,hexDrink.length()));
-                byte endSetByte = byteCheck(data,6);
-                String hexToSet = String.format("%04x", endSetByte);
-                data[6] = hexString2Byte(hexToSet.substring(2,4));
-                break;
-            case 6://获取设置喝水目标
-                data = new byte[5];
-                data[0] = (byte) 0x23;
-                data[1] = (byte) 0x02;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x04;
-                data[4] = (byte) 0x2d;
-                break;
-            case 7://获取当天当前喝水量
-                data = new byte[5];
-                data[0] = (byte) 0x23;
-                data[1] = (byte) 0x02;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x05;
-                data[4] = (byte) 0x2c;
-                break;
-            case 8://获取当天喝水记录
-                Calendar nowDay = Calendar.getInstance();
-                String yearNow =  "" + nowDay.get(Calendar.YEAR);
-                int monthNow = nowDay.get(Calendar.MONTH) + 1;
-                int dayNow = nowDay.get(Calendar.DAY_OF_MONTH);
+      BluetoothGattCharacteristic characteristic = gattService.getCharacteristic(TX_CHAR_UUID);
 
-                String yearStrNow = yearNow.substring(2,yearNow.length());
-                String monthStrNow = monthNow > 10 ? "" + monthNow : "0" + monthNow;
-                String dayStrNow = dayNow > 10 ? "" + dayNow : "0" + dayNow;
+      characteristic.setValue(data);
+      Log.e(TAG, "指令byte数组：" + StrUntils.bytesToString(data));
+      boolean consequence = gatt.writeCharacteristic(characteristic);
+      if (consequence) {
+        Log.e("TAG", "发送成功");
+      } else {
+        Log.e("TAG", "发送失败");
+      }
+    }
 
-                data = new byte[11];
-                data[0] = (byte) 0x23;
-                data[1] = (byte) 0x08;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0xF1;
-                data[4] = (byte) 0x03;
-                data[5] = (byte) 0x00;
-                data[6] = (byte) 0x01;
-                data[7] = hexString2Byte(yearStrNow);
-                data[8] = hexString2Byte(monthStrNow);
-                data[9] = hexString2Byte(dayStrNow);
-                byte endSetByteCord = byteCheck(data,10);
-                String hexToCord = String.format("%04x", endSetByteCord);
-                data[10] = hexString2Byte(hexToCord.substring(2,4));
-                break;
-            case 9://删除某天喝水记录
-                Calendar nowDel = Calendar.getInstance();
-                nowDel.add(Calendar.DATE, -1);
-                String yearDel =  "" + nowDel.get(Calendar.YEAR);
-                int monthDel = nowDel.get(Calendar.MONTH) + 1;
-                int dayDel = nowDel.get(Calendar.DAY_OF_MONTH);
+    public void handShake() {
+      byte[] data = new byte[7];
+      data[0] = 0x23;
+      data[1] = 0x04;
+      data[2] = 0x08;
+      data[3] = 0x01;
+      data[4] = 0x55;
+      data[5] = (byte) 0xAA;
+      byte endByteWo = byteCheck(data, 6);
+      String hexToWo = String.format("%04x", endByteWo);
+      data[6] = hexString2Byte(hexToWo.substring(2, 4));
+      send(data);
+    }
 
-                String yearStrDel = yearDel.substring(2,yearDel.length());
-                String monthStrDel = monthDel > 10 ? "" + monthDel : "0" + monthDel;
-                String dayStrDel = dayDel > 10 ? "" + dayDel : "0" + dayDel;
+    public void setTime(String year, int month, int day, int hour, int minute, int dayOfWeek) {
+      String yearStr = year.substring(2, year.length());
+      String monthStr = month > 10 ? "" + month : "0" + month;
+      String dayStr = day > 10 ? "" + day : "0" + day;
+      String hourStr = hour > 10 ? "" + hour : "0" + hour;
+      String minuteStr = minute > 10 ? "" + minute : "0" + minute;
+      String week = "0" + dayOfWeek;
+      byte[] data = new byte[12];
+      data[0] = (byte) 0x23;
+      data[1] = (byte) 0x09;
+      data[2] = (byte) 0x01;
+      data[3] = (byte) 0x02;
+      data[4] = hexString2Byte(yearStr);
+      data[5] = hexString2Byte(monthStr);
+      data[6] = hexString2Byte(dayStr);
+      data[7] = hexString2Byte(hourStr);
+      data[8] = hexString2Byte(minuteStr);
+      data[9] = 0x00;
+      data[10] = hexString2Byte(week);
+      byte endByte = byteCheck(data, 11);
+      String hexTo = String.format("%04x", endByte);
+      data[11] = hexString2Byte(hexTo.substring(2, 4));
+      send(data);
+    }
 
-                data = new byte[11];
-                data[0] = (byte) 0x23;
-                data[1] = (byte) 0x08;
-                data[2] = (byte) 0x08;
-                data[3] = (byte) 0xF1;
-                data[4] = (byte) 0x04;
-                data[5] = (byte) 0x00;
-                data[6] = (byte) 0x01;
-                data[7] = hexString2Byte(yearStrDel);
-                data[8] = hexString2Byte(monthStrDel);
-                data[9] = hexString2Byte(dayStrDel);
-                byte endByteDel = byteCheck(data,10);
-                String hexToDel = String.format("%04x", endByteDel);
-                data[10] = hexString2Byte(hexToDel.substring(2,4));
-                break;
-            case 10://设置用户信息
-                String name = "Join";
-                byte[] byteName = name.getBytes();
-                int cmdSize = 7 + byteName.length;
-                data = new byte[cmdSize];
-                data[0] = (byte) 0x23;
-                data[1] = hexString2Byte(String.format("%04X",name.length() + 4));
-                data[2] = (byte) 0x04;
-                data[3] = (byte) 0x0A;
-                data[4] = (byte) 0x01;//01 男  00女
-                data[5] =  hexString2Byte(String.format("%04X",30)); //年龄
-                for (int i = 0; i < byteName.length; i++) {
-                    data[6 + i] = byteName[i];
-                }
-                for (int i = 0; i < data.length - 1; i++) {
-                    data[cmdSize - 1] += (data[i]^i);
-                }
-                data[cmdSize - 1] = (byte) (data[cmdSize - 1] & 0xFF);
-                break;
-            case 11://获取用户信息
-                data = new byte[5];
-                data[0] = (byte) 0x23;
-                data[1] = (byte) 0x02;
-                data[2] = (byte) 0x02;
-                data[3] = (byte) 0x0A;
-                data[4] = (byte) 0x2F;
-                break;
-        }
-        characteristic.setValue(data);
-        Log.e(TAG, "指令byte数组：" + StrUntils.bytesToString(data));
-        boolean consequence = gatt.writeCharacteristic(characteristic);
-        if (consequence) {
-            Log.e("TAG", "发送成功");
-        } else {
-            Log.e("TAG", "发送失败");
-        }
+    public void getTime() {
+      byte[] data = new byte[5];
+      data[0] = (byte) 0x23;
+      data[1] = (byte) 0x02;
+      data[2] = (byte) 0x02;
+      data[3] = (byte) 0x02;
+      data[4] = (byte) 0x27;
+      send(data);
+    }
 
+    public void getBattery() {
+      byte[] data = new byte[5];
+      data[0] = (byte) 0x23;
+      data[1] = (byte) 0x02;
+      data[2] = (byte) 0x02;
+      data[3] = (byte) 0x03;
+      data[4] = (byte) 0x26;
+      send(data);
+    }
+
+    public void setIntakeGoal(int drinkWater) {
+      String hexDrink = String.format("%04X", drinkWater);
+      byte[] data = new byte[7];
+      data[0] = (byte) 0x23;
+      data[1] = (byte) 0x04;
+      data[2] = (byte) 0x01;
+      data[3] = (byte) 0x04;
+      data[4] = hexString2Byte(hexDrink.substring(0, 2));
+      data[5] = hexString2Byte(hexDrink.substring(2, hexDrink.length()));
+      byte endSetByte = byteCheck(data, 6);
+      String hexToSet = String.format("%04x", endSetByte);
+      data[6] = hexString2Byte(hexToSet.substring(2, 4));
+      send(data);
+    }
+
+    public void getIntakeGoal() {
+      byte[] data = new byte[5];
+      data[0] = (byte) 0x23;
+      data[1] = (byte) 0x02;
+      data[2] = (byte) 0x02;
+      data[3] = (byte) 0x04;
+      data[4] = (byte) 0x2d;
+      send(data);
+    }
+
+    public void getCurrentIntake() {
+      byte[] data = new byte[5];
+      data[0] = (byte) 0x23;
+      data[1] = (byte) 0x02;
+      data[2] = (byte) 0x02;
+      data[3] = (byte) 0x05;
+      data[4] = (byte) 0x2c;
+      send(data);
+    }
+
+    public void getWaterDirectory(String year, int month, int day) {
+      String yearStrNow = year.substring(2, year.length());
+      String monthStrNow = month > 10 ? "" + month : "0" + month;
+      String dayStrNow = day > 10 ? "" + day : "0" + day;
+
+      byte[] data = new byte[11];
+      data[0] = (byte) 0x23;
+      data[1] = (byte) 0x08;
+      data[2] = (byte) 0x02;
+      data[3] = (byte) 0xF1;
+      data[4] = (byte) 0x03;
+      data[5] = (byte) 0x00;
+      data[6] = (byte) 0x01;
+      data[7] = hexString2Byte(yearStrNow);
+      data[8] = hexString2Byte(monthStrNow);
+      data[9] = hexString2Byte(dayStrNow);
+      byte endSetByteCord = byteCheck(data, 10);
+      String hexToCord = String.format("%04x", endSetByteCord);
+      data[10] = hexString2Byte(hexToCord.substring(2, 4));
+      send(data);
+    }
+
+    public void deleteWaterDirectory(String year, int month, int day) {
+      String yearStrDel = year.substring(2, year.length());
+      String monthStrDel = month > 10 ? "" + month : "0" + month;
+      String dayStrDel = day > 10 ? "" + day : "0" + day;
+
+      byte[] data = new byte[11];
+      data[0] = (byte) 0x23;
+      data[1] = (byte) 0x08;
+      data[2] = (byte) 0x08;
+      data[3] = (byte) 0xF1;
+      data[4] = (byte) 0x04;
+      data[5] = (byte) 0x00;
+      data[6] = (byte) 0x01;
+      data[7] = hexString2Byte(yearStrDel);
+      data[8] = hexString2Byte(monthStrDel);
+      data[9] = hexString2Byte(dayStrDel);
+      byte endByteDel = byteCheck(data, 10);
+      String hexToDel = String.format("%04x", endByteDel);
+      data[10] = hexString2Byte(hexToDel.substring(2, 4));
+      send(data);
+    }
+
+    public void setUserInformation(String name, String sex, int age) {
+
+      byte[] byteName = name.getBytes();
+      int cmdSize = 7 + byteName.length;
+      byte[] data = new byte[cmdSize];
+      data[0] = (byte) 0x23;
+      data[1] = hexString2Byte(String.format("%04X", name.length() + 4));
+      data[2] = (byte) 0x04;
+      data[3] = (byte) 0x0A;
+      data[4] = sex.equalsIgnoreCase("Male") ? (byte) 0x01 : (byte) 0x00; //01 Male  00 Female
+      data[5] = hexString2Byte(String.format("%04X", age)); //年龄
+      for (int i = 0; i < byteName.length; i++) {
+        data[6 + i] = byteName[i];
+      }
+      for (int i = 0; i < data.length - 1; i++) {
+        data[cmdSize - 1] += (data[i] ^ i);
+      }
+      data[cmdSize - 1] = (byte) (data[cmdSize - 1] & 0xFF);
+      send(data);
+    }
+
+    public void getUserInformation() {
+      byte[] data = new byte[5];
+      data[0] = (byte) 0x23;
+      data[1] = (byte) 0x02;
+      data[2] = (byte) 0x02;
+      data[3] = (byte) 0x0A;
+      data[4] = (byte) 0x2F;
+      send(data);
     }
 
     /**
